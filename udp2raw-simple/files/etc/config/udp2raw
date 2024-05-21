@@ -1,0 +1,11 @@
+
+# only general section
+config general 'general'
+# list of udp2raw service name
+	# config file is /etc/udp2raw/$server.conf
+	# for example, below config server with /etc/udp2raw/udp2raw.conf
+	#list server 'udp2raw'
+	# 'nil' is a blank service, without any configure
+	list server 'nil'
+	# daemon user for service
+	option daemon_user 'root'

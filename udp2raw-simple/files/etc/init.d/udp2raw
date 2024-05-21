@@ -1,0 +1,51 @@
+#!/bin/sh /etc/rc.common
+
+START=88
+STOP=15
+USE_PROCD=1
+NAME=udp2raw
+PROG=/usr/bin/$NAME
+
+
+_log() {
+	logger -p "daemon.$1" -t "$NAME" "$2"
+}
+
+validate_config_section() {
+	uci_validate_section "$NAME" general "$1" \
+		'server:list(string)' \
+		'daemon_user:string:root'
+}
+
+start_instance() {
+	local server="$1"
+	local config_file="/etc/udp2raw/${server}.conf"
+	if [ -z "$server" -o "$server" == "nil" ]; then
+		return 0
+	elif ! [ -f "$config_file" ]; then
+		_log "err" "Server config validation failed."
+		return 1
+	fi
+	procd_open_instance
+	procd_set_param command "$PROG"
+	procd_append_param command --conf-file "$config_file"
+	procd_set_param respawn
+	procd_set_param file "$config_file"
+	[ -n "$daemon_user" ] && procd_set_param user "$daemon_user" && _log "info" "running from ${daemon_user} user"
+	procd_set_param pidfile "/var/run/${NAME}.${server}.pid"
+	procd_close_instance
+}
+
+service_triggers() {
+	procd_add_reload_trigger "$NAME"
+}
+
+start_service() {
+	if ! validate_config_section "general" ; then
+		_log "err" "Config validate failed."
+		return 1
+	fi
+	for srv in $server; do
+		start_instance $srv
+	done
+}
